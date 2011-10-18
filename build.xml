@@ -4,11 +4,7 @@
 
 <property environment="MyEnv" />
 
-<target name="clean" description="Cleanup build artifacts">
-  <exec executable="./vcsclean" failonerror="true" />
-</target>
-
- <target name="build" depends="clean">
+ <target name="build">
   <exec executable="./buildconf" failonerror="true" />
   <exec executable="./configure" failonerror="true" />
   <exec executable="make" failonerror="true">
