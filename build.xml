@@ -14,7 +14,7 @@
 
  <target name="test">
   <exec executable="./sapi/cli/php" failonerror="true">
-   <env key="TEST_PHP_EXECUTABLE" value="auto" />
+   <env key="TEST_PHP_EXECUTABLE" value="sapi/cli/php" />
    <env key="NO_INTERACTION" value="1" />
    <env key="REPORT_EXIT_STATUS" value="1" />
    <env key="TEST_PHP_JUNIT" value="${MyEnv.WORKSPACE}/junit.xml" />
