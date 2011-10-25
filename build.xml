@@ -8,7 +8,7 @@
   <exec executable="./buildconf" failonerror="true" />
   <exec executable="./configure" failonerror="true" />
   <exec executable="make" failonerror="true">
-   <arg value="--quiet" />
+   <arg value="-s" />
   </exec>
  </target>
 
