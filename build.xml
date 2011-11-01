@@ -6,7 +6,9 @@
 
  <target name="build">
   <exec executable="./buildconf" failonerror="true" />
-  <exec executable="./configure" failonerror="true" />
+  <exec executable="./configure" failonerror="true">
+    <arg value="--enable-debug"/>
+  </exec>
   <exec executable="make" failonerror="true">
    <arg value="-s" />
   </exec>
