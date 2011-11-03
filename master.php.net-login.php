@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 $token          = @file_get_contents('/var/lib/jenkins/AUTH_TOKEN');;
 $user           = getenv('U');
