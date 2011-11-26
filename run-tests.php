@@ -2,7 +2,7 @@
 <?php
 /*
    +----------------------------------------------------------------------+
-   | PHP Version 5, 6                                                     |
+   | PHP Version 5                                                        |
    +----------------------------------------------------------------------+
    | Copyright (c) 1997-2010 The PHP Group                                |
    +----------------------------------------------------------------------+
@@ -24,7 +24,7 @@
    +----------------------------------------------------------------------+
  */
 
-/* $Id: run-tests.php 315995 2011-09-01 14:52:55Z johannes $ */
+/* $Id: run-tests.php 319961 2011-11-26 17:30:03Z felipe $ */
 
 /* Sanity check to ensure that pcre extension needed by this script is available.
  * In the event it is not, print a nice error message indicating that this script will
@@ -78,13 +78,6 @@ if (PHP_VERSION_ID < 50300) {
 	if (PHP_VERSION_ID < 50207) {
 		define('FILE_BINARY', 0);
 	}
-}
-
-// (unicode) is available from 6.0.0
-if (PHP_VERSION_ID < 60000) {
-	define('STRING_TYPE', 'string');
-} else {
-	define('STRING_TYPE', 'unicode');
 }
 
 // If timezone is not set, use UTC.
@@ -673,7 +666,7 @@ if (isset($argc) && $argc > 1) {
 					$html_output = is_resource($html_file);
 					break;
 				case '--version':
-					echo '$Revision: 315995 $' . "\n";
+					echo '$Revision: 319961 $' . "\n";
 					exit(1);
 
 				default:
@@ -1042,12 +1035,12 @@ function save_text($filename, $text, $filename_copy = null)
 	global $DETAILED;
 
 	if ($filename_copy && $filename_copy != $filename) {
-		if (file_put_contents($filename_copy, (binary) $text, FILE_BINARY) === false) {
+		if (file_put_contents($filename_copy, $text, FILE_BINARY) === false) {
 			error("Cannot open file '" . $filename_copy . "' (save_text)");
 		}
 	}
 
-	if (file_put_contents($filename, (binary) $text, FILE_BINARY) === false) {
+	if (file_put_contents($filename, $text, FILE_BINARY) === false) {
 		error("Cannot open file '" . $filename . "' (save_text)");
 	}
 
@@ -1083,11 +1076,11 @@ function system_with_timeout($commandline, $env = null, $stdin = null)
 {
 	global $leak_check, $cwd;
 
-	$data = b'';
+	$data = '';
 
 	$bin_env = array();
 	foreach((array)$env as $key => $value) {
-		$bin_env[(binary)$key] = (binary)$value;
+		$bin_env[$key] = $value;
 	}
 
 	$proc = proc_open($commandline, array(
@@ -1101,7 +1094,7 @@ function system_with_timeout($commandline, $env = null, $stdin = null)
 	}
 
 	if (!is_null($stdin)) {
-		fwrite($pipes[0], (binary) $stdin);
+		fwrite($pipes[0], $stdin);
 	}
 	fclose($pipes[0]);
 
@@ -1119,11 +1112,11 @@ function system_with_timeout($commandline, $env = null, $stdin = null)
 			break;
 		} else if ($n === 0) {
 			/* timed out */
-			$data .= b"\n ** ERROR: process timed out **\n";
+			$data .= "\n ** ERROR: process timed out **\n";
 			proc_terminate($proc, 9);
 			return $data;
 		} else if ($n > 0) {
-			$line = (binary) fread($pipes[1], 8192);
+			$line = fread($pipes[1], 8192);
 			if (strlen($line) == 0) {
 				/* EOF */
 				break;
@@ -1135,7 +1128,7 @@ function system_with_timeout($commandline, $env = null, $stdin = null)
 	$stat = proc_get_status($proc);
 
 	if ($stat['signaled']) {
-		$data .= b"\nTermsig=" . $stat['stopsig'];
+		$data .= "\nTermsig=" . $stat['stopsig'];
 	}
 
 	$code = proc_close($proc);
@@ -1188,21 +1181,6 @@ function show_file_block($file, $block, $section = null)
 		echo rtrim($block);
 		echo "\n========DONE========\n";
 	}
-}
-
-function binary_section($section)
-{
-	return PHP_MAJOR_VERSION < 6 ||
-		(
-			$section == 'FILE'			||
-	        $section == 'FILEEOF'		||
-			$section == 'EXPECT'		||
-			$section == 'EXPECTF'		||
-			$section == 'EXPECTREGEX'	||
-			$section == 'EXPECTHEADERS'	||
-			$section == 'SKIPIF'		||
-			$section == 'CLEAN'
-		);
 }
 
 //
@@ -1268,28 +1246,19 @@ TEST $file
 		}
 
 		// Match the beginning of a section.
-		if (preg_match(b'/^--([_A-Z]+)--/', $line, $r)) {
+		if (preg_match('/^--([_A-Z]+)--/', $line, $r)) {
 			$section = $r[1];
-			settype($section, STRING_TYPE);
+			settype($section, 'string');
 
 			if (isset($section_text[$section])) {
 				$bork_info = "duplicated $section section";
 				$borked    = true;
 			}
 
-			$section_text[$section] = binary_section($section) ? b'' : '';
+			$section_text[$section] = '';
 			$secfile = $section == 'FILE' || $section == 'FILEEOF' || $section == 'FILE_EXTERNAL';
 			$secdone = false;
 			continue;
-		}
-
-		if (!binary_section($section)) {
-			$line = unicode_decode($line, "utf-8");
-			if ($line == false) {
-				$bork_info = "cannot read test";
-				$borked = true;
-				break;
-			}
 		}
 
 		// Add to the section text.
@@ -1298,7 +1267,7 @@ TEST $file
 		}
 
 		// End of actual test?
-		if ($secfile && preg_match(b'/^===DONE===\s*$/', $line)) {
+		if ($secfile && preg_match('/^===DONE===\s*$/', $line)) {
 			$secdone = true;
 		}
 	}
@@ -1323,7 +1292,7 @@ TEST $file
 			}
 
 			if (@count($section_text['FILEEOF']) == 1) {
-				$section_text['FILE'] = preg_replace(b"/[\r\n]+$/", b'', $section_text['FILEEOF']);
+				$section_text['FILE'] = preg_replace("/[\r\n]+$/", '', $section_text['FILEEOF']);
 				unset($section_text['FILEEOF']);
 			}
 
@@ -1793,7 +1762,7 @@ COMMAND $cmd
 	if ($JUNIT) {
 		$test_started_at    = microtime(true);
 	}
-	$out = (binary) system_with_timeout($cmd, $env, isset($section_text['STDIN']) ? $section_text['STDIN'] : null);
+	$out = system_with_timeout($cmd, $env, isset($section_text['STDIN']) ? $section_text['STDIN'] : null);
 	if ($JUNIT) {
 		$test_finished_at   = microtime(true);
 		$test_execution_time= number_format($test_finished_at-$test_started_at, 2);
@@ -1834,19 +1803,19 @@ COMMAND $cmd
 	}
 
 	// Does the output match what is expected?
-	$output = preg_replace(b"/\r\n/", b"\n", trim($out));
+	$output = preg_replace("/\r\n/", "\n", trim($out));
 
 	/* when using CGI, strip the headers from the output */
-	$headers = b"";
+	$headers = "";
 
-	if (isset($old_php) && preg_match(b"/^(.*?)\r?\n\r?\n(.*)/s", $out, $match)) {
+	if (isset($old_php) && preg_match("/^(.*?)\r?\n\r?\n(.*)/s", $out, $match)) {
 		$output = trim($match[2]);
-		$rh = preg_split(b"/[\n\r]+/", $match[1]);
+		$rh = preg_split("/[\n\r]+/", $match[1]);
 		$headers = array();
 
 		foreach ($rh as $line) {
-			if (strpos($line, b':') !== false) {
-				$line = explode(b':', $line, 2);
+			if (strpos($line, ':') !== false) {
+				$line = explode(':', $line, 2);
 				$headers[trim($line[0])] = trim($line[1]);
 			}
 		}
@@ -1857,13 +1826,13 @@ COMMAND $cmd
 	if (isset($section_text['EXPECTHEADERS'])) {
 		$want = array();
 		$wanted_headers = array();
-		$lines = preg_split(b"/[\n\r]+/", (binary) $section_text['EXPECTHEADERS']);
+		$lines = preg_split("/[\n\r]+/", $section_text['EXPECTHEADERS']);
 
 		foreach($lines as $line) {
-			if (strpos($line, b':') !== false) {
-				$line = explode(b':', $line, 2);
+			if (strpos($line, ':') !== false) {
+				$line = explode(':', $line, 2);
 				$want[trim($line[0])] = trim($line[1]);
-				$wanted_headers[] = trim($line[0]) . b': ' . trim($line[1]);
+				$wanted_headers[] = trim($line[0]) . ': ' . trim($line[1]);
 			}
 		}
 
@@ -1875,7 +1844,7 @@ COMMAND $cmd
 
 			if (isset($org_headers[$k])) {
 				$headers = $org_headers[$k];
-				$output_headers[] = $k . b': ' . $org_headers[$k];
+				$output_headers[] = $k . ': ' . $org_headers[$k];
 			}
 
 			if (!isset($org_headers[$k]) || $org_headers[$k] != $v) {
@@ -1884,9 +1853,9 @@ COMMAND $cmd
 		}
 
 		ksort($wanted_headers);
-		$wanted_headers = join(b"\n", $wanted_headers);
+		$wanted_headers = join("\n", $wanted_headers);
 		ksort($output_headers);
-		$output_headers = join(b"\n", $output_headers);
+		$output_headers = join("\n", $output_headers);
 	}
 
 	show_file_block('out', $output);
@@ -1900,13 +1869,13 @@ COMMAND $cmd
 		}
 
 		show_file_block('exp', $wanted);
-		$wanted_re = preg_replace(b'/\r\n/', b"\n", $wanted);
+		$wanted_re = preg_replace('/\r\n/', "\n", $wanted);
 
 		if (isset($section_text['EXPECTF'])) {
 
 			// do preg_quote, but miss out any %r delimited sections
-			$temp = b"";
-			$r = b"%r";
+			$temp = "";
+			$r = "%r";
 			$startOffset = 0;
 			$length = strlen($wanted_re);
 			while($startOffset < $length) {
@@ -1923,47 +1892,47 @@ COMMAND $cmd
 					$start = $end = $length;
 				}
 				// quote a non re portion of the string
-				$temp = $temp . preg_quote(substr($wanted_re, $startOffset, ($start - $startOffset)),  b'/');
+				$temp = $temp . preg_quote(substr($wanted_re, $startOffset, ($start - $startOffset)),  '/');
 				// add the re unquoted.
 				if ($end > $start) {
-					$temp = $temp . b'(' . substr($wanted_re, $start+2, ($end - $start-2)). b')';
+					$temp = $temp . '(' . substr($wanted_re, $start+2, ($end - $start-2)). ')';
 				}
 				$startOffset = $end + 2;
 			}
 			$wanted_re = $temp;
 
 			$wanted_re = str_replace(
-				array(b'%binary_string_optional%'),
-				version_compare(PHP_VERSION, '6.0.0-dev') == -1 ? b'string' : b'binary string',
+				array('%binary_string_optional%'),
+				'string',
 				$wanted_re
 			);
 			$wanted_re = str_replace(
-				array(b'%unicode_string_optional%'),
-				version_compare(PHP_VERSION, '6.0.0-dev') == -1 ? b'string' : b'Unicode string',
+				array('%unicode_string_optional%'),
+				'string',
 				$wanted_re
 			);
 			$wanted_re = str_replace(
-				array(b'%unicode\|string%', b'%string\|unicode%'),
-				version_compare(PHP_VERSION, '6.0.0-dev') == -1 ? b'string' : b'unicode',
+				array('%unicode\|string%', '%string\|unicode%'),
+				'string',
 				$wanted_re
 			);
 			$wanted_re = str_replace(
-				array(b'%u\|b%', b'%b\|u%'),
-				version_compare(PHP_VERSION, '6.0.0-dev') == -1 ? b'' : b'u',
+				array('%u\|b%', '%b\|u%'),
+				'',
 				$wanted_re
 			);
 			// Stick to basics
-			$wanted_re = str_replace(b'%e', b'\\' . DIRECTORY_SEPARATOR, $wanted_re);
-			$wanted_re = str_replace(b'%s', b'[^\r\n]+', $wanted_re);
-			$wanted_re = str_replace(b'%S', b'[^\r\n]*', $wanted_re);
-			$wanted_re = str_replace(b'%a', b'.+', $wanted_re);
-			$wanted_re = str_replace(b'%A', b'.*', $wanted_re);
-			$wanted_re = str_replace(b'%w', b'\s*', $wanted_re);
-			$wanted_re = str_replace(b'%i', b'[+-]?\d+', $wanted_re);
-			$wanted_re = str_replace(b'%d', b'\d+', $wanted_re);
-			$wanted_re = str_replace(b'%x', b'[0-9a-fA-F]+', $wanted_re);
-			$wanted_re = str_replace(b'%f', b'[+-]?\.?\d+\.?\d*(?:[Ee][+-]?\d+)?', $wanted_re);
-			$wanted_re = str_replace(b'%c', b'.', $wanted_re);
+			$wanted_re = str_replace('%e', '\\' . DIRECTORY_SEPARATOR, $wanted_re);
+			$wanted_re = str_replace('%s', '[^\r\n]+', $wanted_re);
+			$wanted_re = str_replace('%S', '[^\r\n]*', $wanted_re);
+			$wanted_re = str_replace('%a', '.+', $wanted_re);
+			$wanted_re = str_replace('%A', '.*', $wanted_re);
+			$wanted_re = str_replace('%w', '\s*', $wanted_re);
+			$wanted_re = str_replace('%i', '[+-]?\d+', $wanted_re);
+			$wanted_re = str_replace('%d', '\d+', $wanted_re);
+			$wanted_re = str_replace('%x', '[0-9a-fA-F]+', $wanted_re);
+			$wanted_re = str_replace('%f', '[+-]?\.?\d+\.?\d*(?:[Ee][+-]?\d+)?', $wanted_re);
+			$wanted_re = str_replace('%c', '.', $wanted_re);
 			// %f allows two points "-.0.0" but that is the best *simple* expression
 		}
 /* DEBUG YOUR REGEX HERE
@@ -1971,7 +1940,7 @@ COMMAND $cmd
 		print(str_repeat('=', 80) . "\n");
 		var_dump($output);
 */
-		if (preg_match(b"/^$wanted_re\$/s", $output)) {
+		if (preg_match("/^$wanted_re\$/s", $output)) {
 			$passed = true;
 			if (!$cfg['keep']['php']) {
 				@unlink($test_file);
@@ -1999,8 +1968,8 @@ COMMAND $cmd
 
 	} else {
 
-		$wanted = (binary) trim($section_text['EXPECT']);
-		$wanted = preg_replace(b'/\r\n/',b"\n", $wanted);
+		$wanted = trim($section_text['EXPECT']);
+		$wanted = preg_replace('/\r\n/',"\n", $wanted);
 		show_file_block('exp', $wanted);
 
 		// compare and leave on success
@@ -2038,8 +2007,8 @@ COMMAND $cmd
 	// Test failed so we need to report details.
 	if ($failed_headers) {
 		$passed = false;
-		$wanted = (binary) $wanted_headers . b"\n--HEADERS--\n" . (binary) $wanted;
-		$output = (binary) $output_headers . b"\n--HEADERS--\n" . (binary) $output;
+		$wanted = $wanted_headers . "\n--HEADERS--\n" . $wanted;
+		$output = $output_headers . "\n--HEADERS--\n" . $output;
 
 		if (isset($wanted_re)) {
 			$wanted_re = preg_quote($wanted_headers . "\n--HEADERS--\n", '/') . $wanted_re;
@@ -2066,12 +2035,12 @@ COMMAND $cmd
 	if (!$passed) {
 
 		// write .exp
-		if (strpos($log_format, 'E') !== false && file_put_contents($exp_filename, (binary) $wanted, FILE_BINARY) === false) {
+		if (strpos($log_format, 'E') !== false && file_put_contents($exp_filename, $wanted, FILE_BINARY) === false) {
 			error("Cannot create expected test output - $exp_filename");
 		}
 
 		// write .out
-		if (strpos($log_format, 'O') !== false && file_put_contents($output_filename, (binary) $output, FILE_BINARY) === false) {
+		if (strpos($log_format, 'O') !== false && file_put_contents($output_filename, $output, FILE_BINARY) === false) {
 			error("Cannot create test output - $output_filename");
 		}
 
@@ -2081,12 +2050,12 @@ COMMAND $cmd
 			$diff = "# original source file: $shortname\n" . $diff;
 		}
 		show_file_block('diff', $diff);
-		if (strpos($log_format, 'D') !== false && file_put_contents($diff_filename, (binary) $diff, FILE_BINARY) === false) {
+		if (strpos($log_format, 'D') !== false && file_put_contents($diff_filename, $diff, FILE_BINARY) === false) {
 			error("Cannot create test diff - $diff_filename");
 		}
 
 		// write .sh
-		if (strpos($log_format, 'S') !== false && file_put_contents($sh_filename, b"#!/bin/sh
+		if (strpos($log_format, 'S') !== false && file_put_contents($sh_filename, "#!/bin/sh
 
 {$cmd}
 ", FILE_BINARY) === false) {
@@ -2095,7 +2064,7 @@ COMMAND $cmd
 		chmod($sh_filename, 0755);
 
 		// write .log
-		if (strpos($log_format, 'L') !== false && file_put_contents($log_filename, b"
+		if (strpos($log_format, 'L') !== false && file_put_contents($log_filename, "
 ---- EXPECTED OUTPUT
 $wanted
 ---- ACTUAL OUTPUT
@@ -2146,9 +2115,9 @@ $output
 function comp_line($l1, $l2, $is_reg)
 {
 	if ($is_reg) {
-		return preg_match(b'/^'. (binary) $l1 . b'$/s', (binary) $l2);
+		return preg_match('/^'. $l1 . '$/s', $l2);
 	} else {
-		return !strcmp((binary) $l1, (binary) $l2);
+		return !strcmp($l1, $l2);
 	}
 }
 
@@ -2214,14 +2183,14 @@ function generate_array_diff($ar1, $ar2, $is_reg, $w)
 			$c2 = @count_array_diff($ar1, $ar2, $is_reg, $w, $idx1, $idx2+1, $cnt1,  $cnt2, 10);
 
 			if ($c1 > $c2) {
-				$old1[$idx1] = (binary) sprintf("%03d- ", $idx1+1) . $w[$idx1++];
+				$old1[$idx1] = sprintf("%03d- ", $idx1+1) . $w[$idx1++];
 				$last = 1;
 			} else if ($c2 > 0) {
-				$old2[$idx2] = (binary) sprintf("%03d+ ", $idx2+1) . $ar2[$idx2++];
+				$old2[$idx2] = sprintf("%03d+ ", $idx2+1) . $ar2[$idx2++];
 				$last = 2;
 			} else {
-				$old1[$idx1] = (binary) sprintf("%03d- ", $idx1+1) . $w[$idx1++];
-				$old2[$idx2] = (binary) sprintf("%03d+ ", $idx2+1) . $ar2[$idx2++];
+				$old1[$idx1] = sprintf("%03d- ", $idx1+1) . $w[$idx1++];
+				$old2[$idx2] = sprintf("%03d+ ", $idx2+1) . $ar2[$idx2++];
 			}
 		}
 	}
@@ -2251,11 +2220,11 @@ function generate_array_diff($ar1, $ar2, $is_reg, $w)
 	}
 
 	while ($idx1 < $cnt1) {
-		$diff[] = (binary) sprintf("%03d- ", $idx1 + 1) . $w[$idx1++];
+		$diff[] = sprintf("%03d- ", $idx1 + 1) . $w[$idx1++];
 	}
 
 	while ($idx2 < $cnt2) {
-		$diff[] = (binary) sprintf("%03d+ ", $idx2 + 1) . $ar2[$idx2++];
+		$diff[] = sprintf("%03d+ ", $idx2 + 1) . $ar2[$idx2++];
 	}
 
 	return $diff;
@@ -2263,12 +2232,12 @@ function generate_array_diff($ar1, $ar2, $is_reg, $w)
 
 function generate_diff($wanted, $wanted_re, $output)
 {
-	$w = explode(b"\n", $wanted);
-	$o = explode(b"\n", $output);
-	$r = is_null($wanted_re) ? $w : explode(b"\n", $wanted_re);
+	$w = explode("\n", $wanted);
+	$o = explode("\n", $output);
+	$r = is_null($wanted_re) ? $w : explode("\n", $wanted_re);
 	$diff = generate_array_diff($r, $o, !is_null($wanted_re), $w);
 
-	return implode(b"\r\n", $diff);
+	return implode("\r\n", $diff);
 }
 
 function error($message)
