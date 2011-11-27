@@ -11,6 +11,7 @@
   </exec>
   <exec executable="make" failonerror="true">
    <arg value="-s" />
+   <arg value="-j2" />
   </exec>
  </target>
 
