@@ -14,18 +14,11 @@
   </exec>
  </target>
 
- <target name="test">
-  <exec executable="./sapi/cli/php" failonerror="true">
-   <env key="TEST_PHP_EXECUTABLE" value="auto" />
+ <target name="test" depends="build">
+  <exec executable="make" failonerror="true">
    <env key="NO_INTERACTION" value="1" />
-   <env key="REPORT_EXIT_STATUS" value="1" />
    <env key="TEST_PHP_JUNIT" value="${MyEnv.WORKSPACE}/junit.xml" />
-   <arg value="run-tests.php" />
-   <arg value="-n" />
-   <arg value="-c" />
-   <arg path="tmp-php.ini" />
-   <arg value="-d" />
-   <arg value="extension_dir=modules" />
+   <arg value="test" />
   </exec>
  </target>
 </project>
