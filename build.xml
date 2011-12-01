@@ -9,7 +9,6 @@
  </condition>
 
  <target name="build">
-  <exec executable="${PHPMake}" />
   <exec executable="./buildconf" failonerror="true">
    <arg value="--force" />
   </exec>
