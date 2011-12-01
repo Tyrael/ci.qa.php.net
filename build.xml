@@ -5,7 +5,9 @@
 <property environment="MyEnv" />
 
  <target name="build">
-  <exec executable="./buildconf" failonerror="true" />
+  <exec executable="./buildconf" failonerror="true">
+   <arg value="--force" />
+  </exec>
   <exec executable="./configure" failonerror="true">
     <arg value="--enable-debug"/>
   </exec>
