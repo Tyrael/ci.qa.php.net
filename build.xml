@@ -2,23 +2,28 @@
 
 <project name="ci.qa.php.net" default="build">
 
-<property environment="MyEnv" />
+ <property environment="MyEnv" />
+
+ <condition property="PHPMake" value="${MyEnv.PHP_MAKE}" else="make">
+  <isset property="MyEnv.PHP_MAKE" />
+ </condition>
 
  <target name="build">
+  <exec executable="${PHPMake}" />
   <exec executable="./buildconf" failonerror="true">
    <arg value="--force" />
   </exec>
   <exec executable="./configure" failonerror="true">
     <arg value="--enable-debug"/>
   </exec>
-  <exec executable="make" failonerror="true">
+  <exec executable="${PHPMake}" failonerror="true">
    <arg value="-s" />
    <arg value="-j2" />
   </exec>
  </target>
 
  <target name="test" depends="build">
-  <exec executable="make" failonerror="true">
+  <exec executable="${PHPMake}" failonerror="true">
    <env key="NO_INTERACTION" value="1" />
    <env key="TEST_PHP_JUNIT" value="${MyEnv.WORKSPACE}/junit.xml" />
    <arg value="test" />
