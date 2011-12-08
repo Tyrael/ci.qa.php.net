@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="test" default="build">
+
+ <property environment="MyEnv" />
+
+ <target name="build">
+  <exec executable="date" failonerror="true">
+   <arg value="/T" />
+  </exec>
+ </target>
+
+</project>
