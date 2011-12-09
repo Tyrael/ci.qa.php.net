@@ -5,8 +5,8 @@
  <property environment="MyEnv" />
 
  <target name="build">
-  <exec executable="date" failonerror="true">
-   <arg value="/T" />
+  <exec executable="java" failonerror="true">
+   <arg value="-help" />
   </exec>
  </target>
 
