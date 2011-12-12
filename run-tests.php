@@ -2560,19 +2560,21 @@ function junit_save_xml() {
 	fwrite($JUNIT['fp'], $xml);
 }
 
-function junit_get_suite_xml($suite_name = '') {
+function junit_get_suite_xml($suite_name = '', $parent_suite_name = '') {
 	global $JUNIT;
 
 	$suite = $suite_name ? $JUNIT['suites'][$suite_name] : $JUNIT;
 
+	$suite_output_name = $parent_suite_name ? $parent_suite_name . '.' . $suite['name'] : $suite['name'];
+
 	$result = sprintf(
 		'<testsuite name="%s" tests="%s" failures="%d" errors="%d" skip="%d" time="%s">' . PHP_EOL,
-		$suite['name'], $suite['test_total'], $suite['test_fail'], $suite['test_error'], $suite['test_skip'],
+		$suite_output_name, $suite['test_total'], $suite['test_fail'], $suite['test_error'], $suite['test_skip'],
 		$suite['execution_time']
 	);
 
 	foreach($suite['suites'] as $sub_suite) {
-		$result .= junit_get_suite_xml($sub_suite['name']);
+		$result .= junit_get_suite_xml($sub_suite['name'], $suite['name']);
 	}
 
 	// Output files only in subsuites
