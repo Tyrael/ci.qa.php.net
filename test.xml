@@ -5,8 +5,8 @@
  <property environment="MyEnv" />
 
  <target name="build">
-  <exec executable="java" failonerror="true">
-   <arg value="-help" />
+  <exec executable="cmd.exe" failonerror="true">
+   <arg value="build.bat" />
   </exec>
  </target>
 
