@@ -5,7 +5,7 @@
  <property environment="MyEnv" />
 
  <target name="build">
-  <exec executable="cmd.exe" os="Windows NT" failonerror="true">
+  <exec executable="cmd.exe" failonerror="true">
    <arg line="/c build.bat" />
   </exec>
  </target>
