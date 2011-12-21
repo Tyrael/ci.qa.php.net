@@ -2560,21 +2560,19 @@ function junit_save_xml() {
 	fwrite($JUNIT['fp'], $xml);
 }
 
-function junit_get_suite_xml($suite_name = '', $parent_suite_name = '') {
+function junit_get_suite_xml($suite_name = '') {
 	global $JUNIT;
 
 	$suite = $suite_name ? $JUNIT['suites'][$suite_name] : $JUNIT;
 
-	$suite_output_name = $parent_suite_name ? $parent_suite_name . '.' . $suite['name'] : $suite['name'];
-
-	$result = sprintf(
+    $result = sprintf(
 		'<testsuite name="%s" tests="%s" failures="%d" errors="%d" skip="%d" time="%s">' . PHP_EOL,
-		$suite_output_name, $suite['test_total'], $suite['test_fail'], $suite['test_error'], $suite['test_skip'],
+        $suite['name'], $suite['test_total'], $suite['test_fail'], $suite['test_error'], $suite['test_skip'],
 		$suite['execution_time']
 	);
 
 	foreach($suite['suites'] as $sub_suite) {
-		$result .= junit_get_suite_xml($sub_suite['name'], $suite['name']);
+		$result .= junit_get_suite_xml($sub_suite['name']);
 	}
 
 	// Output files only in subsuites
@@ -2607,14 +2605,15 @@ function junit_mark_test_as($type, $file_name, $test_name, $time = null, $messag
 	global $JUNIT;
 	if (!junit_enabled()) return;
 
-	$suite = junit_get_suite($file_name);
+	$suite = junit_get_suitename_for($file_name);
 
 	junit_suite_record($suite, 'test_total');
 
-	$escaped_test_name = htmlspecialchars($test_name, ENT_QUOTES);
 	$time = null !== $time ? $time : junit_get_timer($file_name);
 	junit_suite_record($suite, 'execution_time', $time);
-	$JUNIT['files'][$file_name]['xml'] = "<testcase classname='$file_name' name='$escaped_test_name' time='$time'>\n";
+
+    $escaped_test_name = basename($file_name) . ' - ' . htmlspecialchars($test_name, ENT_QUOTES);
+    $JUNIT['files'][$file_name]['xml'] = "<testcase classname='$suite' name='$escaped_test_name' time='$time'>\n";
 
 	if (is_array($type)) {
 		$output_type = $type[0] . 'ED';
@@ -2668,14 +2667,19 @@ function junit_start_timer($file_name) {
 	if (!isset($JUNIT['files'][$file_name]['start'])) {
 		$JUNIT['files'][$file_name]['start'] = microtime(true);
 
-		$suite = junit_get_suite($file_name);
+		$suite = junit_get_suitename_for($file_name);
 		junit_init_suite($suite);
-		$JUNIT['suites'][$suite]['files'][] = $file_name;
+		$JUNIT['suites'][$suite]['files'][$file_name] = $file_name;
 	}
 }
 
-function junit_get_suite($file_name) {
-	return dirname($file_name);
+function junit_get_suitename_for($file_name) {
+	return junit_path_to_classname(dirname($file_name));
+}
+
+function junit_path_to_classname($file_name) {
+    global $JUNIT;
+    return $JUNIT['name'] . '.' . str_replace(DIRECTORY_SEPARATOR, '.', $file_name);
 }
 
 function junit_init_suite($suite_name) {
@@ -2707,12 +2711,12 @@ function junit_finish_timer($file_name) {
 		error("Timer for $file_name was not started!");
 	}
 
-	if (isset($JUNIT['files'][$file_name]['total'])) {
-		return;
-	}
+	if (!isset($JUNIT['files'][$file_name]['total'])) {
+        $JUNIT['files'][$file_name]['total'] = 0;
+    }
 
 	$start = $JUNIT['files'][$file_name]['start'];
-	$JUNIT['files'][$file_name]['total'] = microtime(true) - $start;
+	$JUNIT['files'][$file_name]['total'] += microtime(true) - $start;
 	unset($JUNIT['files'][$file_name]['start']);
 }
 
