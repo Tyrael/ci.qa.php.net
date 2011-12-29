@@ -9,6 +9,8 @@
  </condition>
 
  <target name="build">
+  <exec executable="./vcsclean" failonerror="true">
+  </exec>
   <exec executable="./buildconf" failonerror="true">
    <arg value="--force" />
   </exec>
