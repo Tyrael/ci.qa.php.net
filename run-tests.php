@@ -648,7 +648,7 @@ if (isset($argc) && $argc > 1) {
 					$html_output = is_resource($html_file);
 					break;
 				case '--version':
-					echo '$Revision$' . "\n";
+					echo '$Id$' . "\n";
 					exit(1);
 
 				default:
@@ -1314,8 +1314,8 @@ TEST $file
 
 	$tested = trim($section_text['TEST']);
 
-	/* For GET/POST tests, check if cgi sapi is available and if it is, use it. */
-	if (!empty($section_text['GET']) || !empty($section_text['POST']) || !empty($section_text['POST_RAW']) || !empty($section_text['COOKIE']) || !empty($section_text['EXPECTHEADERS'])) {
+	/* For GET/POST/PUT tests, check if cgi sapi is available and if it is, use it. */
+	if (!empty($section_text['GET']) || !empty($section_text['POST']) || !empty($section_text['POST_RAW']) || !empty($section_text['PUT']) || !empty($section_text['COOKIE']) || !empty($section_text['EXPECTHEADERS'])) {
 		if (isset($php_cgi)) {
 			$old_php = $php;
 			$php = $php_cgi . ' -C ';
@@ -1329,6 +1329,9 @@ TEST $file
 			} else if (file_exists("./sapi/cgi/php-cgi")) {
 				$old_php = $php;
 				$php = realpath("./sapi/cgi/php-cgi") . ' -C ';
+			} else if (file_exists(dirname($php) . "/php-cgi")) {
+				$old_php = $php;
+				$php = realpath(dirname($php) . "/php-cgi") . ' -C ';
 			} else {
 				show_result('SKIP', $tested, $tested_file, "reason: CGI not available");
 
@@ -1484,7 +1487,7 @@ TEST $file
 
 			junit_start_timer($shortname);
 
-			$output = system_with_timeout("$extra $php $pass_options -q $ini_settings -d display_errors=0 $test_skipif", $env);
+			$output = system_with_timeout("$extra $php $pass_options -q $ini_settings -d display_errors=0 \"$test_skipif\"", $env);
 
 			junit_finish_timer($shortname);
 
@@ -1658,7 +1661,41 @@ TEST $file
 		}
 
 		save_text($tmp_post, $request);
-		$cmd = "$php $pass_options $ini_settings -f \"$test_file\" 2>&1 < $tmp_post";
+		$cmd = "$php $pass_options $ini_settings -f \"$test_file\" 2>&1 < \"$tmp_post\"";
+
+	} elseif (array_key_exists('PUT', $section_text) && !empty($section_text['PUT'])) {
+
+		$post = trim($section_text['PUT']);
+		$raw_lines = explode("\n", $post);
+
+		$request = '';
+		$started = false;
+
+		foreach ($raw_lines as $line) {
+
+			if (empty($env['CONTENT_TYPE']) && preg_match('/^Content-Type:(.*)/i', $line, $res)) {
+				$env['CONTENT_TYPE'] = trim(str_replace("\r", '', $res[1]));
+				continue;
+			}
+
+			if ($started) {
+				$request .= "\n";
+			}
+
+			$started = true;
+			$request .= $line;
+		}
+
+		$env['CONTENT_LENGTH'] = strlen($request);
+		$env['REQUEST_METHOD'] = 'PUT';
+
+		if (empty($request)) {
+            junit_mark_test_as('BORK', $shortname, $tested, null, 'empty $request');
+			return 'BORKED';
+		}
+
+		save_text($tmp_post, $request);
+		$cmd = "$php $pass_options $ini_settings -f \"$test_file\" 2>&1 < \"$tmp_post\"";
 
 	} else if (array_key_exists('POST', $section_text) && !empty($section_text['POST'])) {
 
@@ -1679,7 +1716,7 @@ TEST $file
 		$env['CONTENT_TYPE']   = 'application/x-www-form-urlencoded';
 		$env['CONTENT_LENGTH'] = $content_length;
 
-		$cmd = "$php $pass_options $ini_settings -f \"$test_file\" 2>&1 < $tmp_post";
+		$cmd = "$php $pass_options $ini_settings -f \"$test_file\" 2>&1 < \"$tmp_post\"";
 
 	} else {
 
@@ -1734,7 +1771,7 @@ COMMAND $cmd
 				settings2params($clean_params);
 				$extra = substr(PHP_OS, 0, 3) !== "WIN" ?
 					"unset REQUEST_METHOD; unset QUERY_STRING; unset PATH_TRANSLATED; unset SCRIPT_FILENAME; unset REQUEST_METHOD;": "";
-				system_with_timeout("$extra $php $pass_options -q $clean_params $test_clean", $env);
+				system_with_timeout("$extra $php $pass_options -q $clean_params \"$test_clean\"", $env);
 			}
 
 			if (!$cfg['keep']['clean']) {
