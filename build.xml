@@ -16,6 +16,11 @@
   </exec>
   <exec executable="./configure" failonerror="true">
     <arg value="--enable-debug"/>
+    <arg value="--enable-sockets"/>
+    <arg value="--enable-zip"/>
+    <arg value="--with-zlib"/>
+    <arg value="--enable-bcmath"/>
+    <arg value="--enable-intl"/>
   </exec>
   <exec executable="${PHPMake}" failonerror="true">
    <arg value="-s" />
