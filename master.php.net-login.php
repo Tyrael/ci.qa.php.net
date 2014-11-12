@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-$token          = @file_get_contents('/var/lib/jenkins/AUTH_TOKEN');;
+$token          = @file_get_contents('/var/lib/jenkins/AUTH_TOKEN');
 $user           = getenv('U');
 $password       = getenv('P');
 
@@ -29,13 +29,10 @@ function auth_verify_master($token, $user, $pass)
     $s = file_get_contents('https://master.php.net/fetch/cvsauth.php', false, $ctx);
 
     $a = @unserialize($s);
-    if (!is_array($a)) {
-        return false;
-    }
-    if (isset($a['errno'])) {
+    
+    if (!is_array($a) || isset($a['errno'])) {
         return false;
     }
 
     return true;
 }
-
